@@ -20,6 +20,25 @@ def get_client() -> httpx.AsyncClient:
     )
 
 
+async def _request(method: str, path: str, **kwargs) -> dict:
+    try:
+        async with get_client() as client:
+            response = await getattr(client, method)(path, **kwargs)
+            response.raise_for_status()
+            return response.json()
+    except httpx.ConnectError:
+        return {"error": f"Cannot connect to n8n at {N8N_API_URL}. Check that n8n is running and N8N_API_URL is correct."}
+    except httpx.TimeoutException:
+        return {"error": f"Request to n8n timed out ({N8N_API_URL}). The server may be overloaded or unreachable."}
+    except httpx.HTTPStatusError as e:
+        status = e.response.status_code
+        if status == 401:
+            return {"error": "Authentication failed (401). Check that N8N_API_KEY is set correctly."}
+        if status == 404:
+            return {"error": f"Resource not found (404): {path}"}
+        return {"error": f"n8n returned HTTP {status}: {e.response.text}"}
+
+
 @mcp.tool()
 async def list_workflows(active: bool | None = None) -> dict:
     """List all workflows in n8n.
@@ -34,10 +53,7 @@ async def list_workflows(active: bool | None = None) -> dict:
     params = {}
     if active is not None:
         params["active"] = str(active).lower()
-    async with get_client() as client:
-        response = await client.get("workflows", params=params)
-        response.raise_for_status()
-        return response.json()
+    return await _request("get", "workflows", params=params)
 
 
 @mcp.tool()
@@ -49,10 +65,7 @@ async def get_workflow(workflow_id: str) -> dict:
 
     Returns the full workflow object including its nodes, connections, and settings.
     """
-    async with get_client() as client:
-        response = await client.get(f"workflows/{workflow_id}")
-        response.raise_for_status()
-        return response.json()
+    return await _request("get", f"workflows/{workflow_id}")
 
 
 @mcp.tool()
@@ -66,11 +79,7 @@ async def execute_workflow(workflow_id: str, data: dict | None = None) -> dict:
 
     Returns the execution result object, including executionId and status.
     """
-    body = data if data is not None else {}
-    async with get_client() as client:
-        response = await client.post(f"workflows/{workflow_id}/run", json=body)
-        response.raise_for_status()
-        return response.json()
+    return await _request("post", f"workflows/{workflow_id}/run", json=data or {})
 
 
 @mcp.tool()
@@ -94,10 +103,7 @@ async def list_executions(
         params["workflowId"] = workflow_id
     if status is not None:
         params["status"] = status
-    async with get_client() as client:
-        response = await client.get("executions", params=params)
-        response.raise_for_status()
-        return response.json()
+    return await _request("get", "executions", params=params)
 
 
 @mcp.tool()
@@ -110,10 +116,7 @@ async def get_execution(execution_id: str) -> dict:
     Returns the full execution object including status, start/end times,
     the data passed between nodes, and any error information.
     """
-    async with get_client() as client:
-        response = await client.get(f"executions/{execution_id}")
-        response.raise_for_status()
-        return response.json()
+    return await _request("get", f"executions/{execution_id}")
 
 
 if __name__ == "__main__":
