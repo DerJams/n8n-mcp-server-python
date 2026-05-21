@@ -45,6 +45,12 @@ Claude Desktop    Claude Code CLI
 | `get_execution` | `execution_id` | Return full execution detail — node outputs, timing, error info. |
 | `wait_for_execution` | `execution_id`, `timeout_seconds` (default 60) | Poll until an execution finishes and return the final result. Times out with a clear error if not done in time. |
 
+**Notes on `execute_workflow`**
+
+- **Output location.** The completed execution object returned by `wait_for_execution` contains node output data at `result["data"]["resultData"]["runData"]`, keyed by node name.
+- **Execution data must be saved.** If `EXECUTIONS_DATA_SAVE_ON_SUCCESS=none` is set in your n8n environment, the `data` field will be empty even on a successful run. The n8n default is to save execution data, so this only applies if the setting has been explicitly changed.
+- **Manual trigger workflows only.** The `/run` endpoint works with workflows that use a manual trigger node. Workflows triggered by a webhook must be called via their webhook URL — the `/run` API endpoint will not fire them.
+
 ---
 
 ## Requirements
