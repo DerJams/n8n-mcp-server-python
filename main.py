@@ -107,6 +107,30 @@ async def list_executions(
 
 
 @mcp.tool()
+async def activate_workflow(workflow_id: str) -> dict:
+    """Activate a workflow so it responds to its trigger.
+
+    Parameters:
+        workflow_id: The unique identifier of the workflow to activate.
+
+    Returns the updated workflow object with active set to true.
+    """
+    return await _request("post", f"workflows/{workflow_id}/activate")
+
+
+@mcp.tool()
+async def deactivate_workflow(workflow_id: str) -> dict:
+    """Deactivate a workflow so its trigger stops firing.
+
+    Parameters:
+        workflow_id: The unique identifier of the workflow to deactivate.
+
+    Returns the updated workflow object with active set to false.
+    """
+    return await _request("post", f"workflows/{workflow_id}/deactivate")
+
+
+@mcp.tool()
 async def get_execution(execution_id: str) -> dict:
     """Retrieve the details of a single workflow execution by its ID.
 
