@@ -83,6 +83,39 @@ async def execute_workflow(workflow_id: str, data: dict | None = None) -> dict:
 
 
 @mcp.tool()
+async def create_workflow(name: str, nodes: list | None = None) -> dict:
+    """Create a new workflow in n8n.
+
+    Parameters:
+        name:  Display name for the new workflow.
+        nodes: Optional list of node definition dicts. Defaults to an empty
+               workflow if omitted. Each node must include at least 'type',
+               'typeVersion', 'position', and 'parameters'.
+
+    Returns the created workflow object including its assigned ID.
+    """
+    body = {
+        "name": name,
+        "nodes": nodes or [],
+        "connections": {},
+        "settings": {},
+    }
+    return await _request("post", "workflows", json=body)
+
+
+@mcp.tool()
+async def delete_workflow(workflow_id: str) -> dict:
+    """Delete a workflow permanently.
+
+    Parameters:
+        workflow_id: The unique identifier of the workflow to delete.
+
+    Returns the deleted workflow object as it existed before deletion.
+    """
+    return await _request("delete", f"workflows/{workflow_id}")
+
+
+@mcp.tool()
 async def list_executions(
     workflow_id: str | None = None,
     status: str | None = None,
