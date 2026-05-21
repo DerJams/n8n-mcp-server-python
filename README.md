@@ -43,6 +43,7 @@ Claude Desktop    Claude Code CLI
 | `deactivate_workflow` | `workflow_id` | Deactivate a workflow so its trigger stops firing. |
 | `list_executions` | `workflow_id`, `status`, `limit` (all optional) | Return execution history. Status: `success` `error` `waiting` `running`. Default limit: 20. |
 | `get_execution` | `execution_id` | Return full execution detail — node outputs, timing, error info. |
+| `wait_for_execution` | `execution_id`, `timeout_seconds` (default 60) | Poll until an execution finishes and return the final result. Times out with a clear error if not done in time. |
 
 ---
 

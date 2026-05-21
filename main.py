@@ -1,4 +1,6 @@
+import asyncio
 import os
+import time
 import httpx
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
@@ -174,6 +176,37 @@ async def get_execution(execution_id: str) -> dict:
     the data passed between nodes, and any error information.
     """
     return await _request("get", f"executions/{execution_id}")
+
+
+@mcp.tool()
+async def wait_for_execution(execution_id: str, timeout_seconds: int = 60) -> dict:
+    """Poll an execution until it finishes, then return the final execution object.
+
+    Calls get_execution every 2 seconds until the status is no longer
+    'running' or 'waiting'. Useful after execute_workflow when you need
+    the output data rather than just the execution ID.
+
+    Parameters:
+        execution_id:    The unique identifier of the execution to wait for.
+        timeout_seconds: Maximum seconds to wait before giving up (default 60).
+
+    Returns the completed execution object, or an error dict if the execution
+    did not finish within timeout_seconds.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        result = await get_execution(execution_id)
+        if "error" in result:
+            return result
+        if result.get("status") not in ("running", "waiting"):
+            return result
+        await asyncio.sleep(2)
+    return {
+        "error": (
+            f"Execution {execution_id} did not complete within {timeout_seconds}s. "
+            "Check its current status with get_execution."
+        )
+    }
 
 
 if __name__ == "__main__":
