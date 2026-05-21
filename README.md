@@ -15,16 +15,17 @@ A TypeScript implementation already exists in the community. This is the Python-
 ## Architecture
 
 ```
-Claude Desktop
-     │
-     │  stdio (MCP protocol)
-     ▼
-n8n MCP Server (main.py)
-     │
-     │  HTTP + X-N8N-API-KEY
-     ▼
-n8n REST API
-(self-hosted or cloud)
+Claude Desktop    Claude Code CLI
+     │                  │
+     └──────┬───────────┘
+            │  stdio (MCP protocol)
+            ▼
+  n8n MCP Server (main.py)
+            │
+            │  HTTP + X-N8N-API-KEY
+            ▼
+       n8n REST API
+   (self-hosted or cloud)
 ```
 
 ---
