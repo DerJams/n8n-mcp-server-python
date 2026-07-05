@@ -116,7 +116,7 @@ For Claude Code, add the server via `/mcp add` or directly in `.claude/settings.
 ## Project structure
 
 ```
-main.py          # MCP server and all five tool definitions
+main.py          # MCP server and all ten tool definitions
 test_api.py      # Script to verify n8n API connectivity before connecting Claude
 start-n8n.bat    # Convenience script to start n8n on Windows
 .env.example     # Environment variable template
