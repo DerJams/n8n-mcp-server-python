@@ -85,24 +85,94 @@ async def execute_workflow(workflow_id: str, data: dict | None = None) -> dict:
 
 
 @mcp.tool()
-async def create_workflow(name: str, nodes: list | None = None) -> dict:
+async def create_workflow(
+    name: str,
+    nodes: list | None = None,
+    connections: dict | None = None,
+) -> dict:
     """Create a new workflow in n8n.
 
     Parameters:
-        name:  Display name for the new workflow.
-        nodes: Optional list of node definition dicts. Defaults to an empty
-               workflow if omitted. Each node must include at least 'type',
-               'typeVersion', 'position', and 'parameters'.
+        name:        Display name for the new workflow.
+        nodes:       Optional list of node definition dicts. Defaults to an
+                     empty workflow if omitted. Each node must include at
+                     least 'type', 'typeVersion', 'position', 'parameters',
+                     'id', and 'name'.
+        connections: Optional n8n connections object wiring node outputs to
+                     inputs. Keyed by source node NAME (not id). Shape:
+                       {
+                         "Trigger": {
+                           "main": [[{"node": "Next", "type": "main", "index": 0}]]
+                         }
+                       }
+                     Defaults to {} (nodes remain unconnected).
 
     Returns the created workflow object including its assigned ID.
     """
     body = {
         "name": name,
         "nodes": nodes or [],
-        "connections": {},
+        "connections": connections or {},
         "settings": {},
     }
     return await _request("post", "workflows", json=body)
+
+
+_UPDATABLE_FIELDS = ("name", "nodes", "connections", "settings", "staticData", "pinData")
+
+
+@mcp.tool()
+async def update_workflow(
+    workflow_id: str,
+    name: str | None = None,
+    nodes: list | None = None,
+    connections: dict | None = None,
+    settings: dict | None = None,
+) -> dict:
+    """Update an existing workflow in n8n.
+
+    n8n's API replaces the whole workflow (PUT /workflows/{id}), so this
+    tool first GETs the current workflow, overlays any fields you provide,
+    then PUTs the full object back. Fields you omit are preserved. Pass an
+    empty dict or list to explicitly clear a field.
+
+    Parameters:
+        workflow_id: The unique identifier of the workflow to update.
+        name:        Optional new display name.
+        nodes:       Optional replacement list of node definitions.
+        connections: Optional replacement connections object
+                     (see create_workflow for the shape).
+        settings:    Optional replacement settings dict.
+
+    Returns the updated workflow object.
+    """
+    current = await _request("get", f"workflows/{workflow_id}")
+    if "error" in current:
+        return current
+
+    # Drop null-valued optional fields (pinData/staticData): n8n's OpenAPI
+    # validator rejects them with 400 "must NOT have additional properties"
+    # even though the schema marks them nullable.
+    body = {
+        field: current[field]
+        for field in _UPDATABLE_FIELDS
+        if field in current and current[field] is not None
+    }
+    overrides = {"name": name, "nodes": nodes, "connections": connections, "settings": settings}
+    for field, value in overrides.items():
+        if value is not None:
+            body[field] = value
+
+    for required in ("name", "nodes", "connections", "settings"):
+        if required not in body:
+            return {
+                "error": (
+                    f"Cannot update workflow {workflow_id}: current workflow is missing "
+                    f"required field '{required}' and none was provided."
+                )
+            }
+
+    return await _request("put", f"workflows/{workflow_id}", json=body)
 
 
 @mcp.tool()

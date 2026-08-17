@@ -36,7 +36,8 @@ Claude Desktop    Claude Code CLI
 |---|---|---|
 | `list_workflows` | `active` (optional bool) | List all workflows. Filter by active/inactive status. |
 | `get_workflow` | `workflow_id` | Return the full definition of a workflow — nodes, connections, settings. |
-| `create_workflow` | `name`, `nodes` (optional list) | Create a new workflow. Nodes default to an empty workflow if omitted. |
+| `create_workflow` | `name`, `nodes` (optional list), `connections` (optional dict) | Create a new workflow. Pass an n8n connections object to wire nodes at creation time; defaults to disconnected. |
+| `update_workflow` | `workflow_id`, `name`, `nodes`, `connections`, `settings` (all optional except id) | Update an existing workflow. GETs the current workflow, overlays provided fields, PUTs the full object back. Omit a field to preserve it. |
 | `delete_workflow` | `workflow_id` | Permanently delete a workflow. Returns the deleted object. |
 | `execute_workflow` | `workflow_id`, `data` (optional dict) | Trigger an immediate workflow run. Pass input data to the trigger node. |
 | `activate_workflow` | `workflow_id` | Activate a workflow so its trigger starts firing. |
